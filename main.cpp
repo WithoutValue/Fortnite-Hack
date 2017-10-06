@@ -39,8 +39,6 @@ float MaxAimbotDistance = 10000.0f;
 #define AIMBOT_KEY VK_XBUTTON2
 #define INSTANT_RELOAD_KEY VK_F6
 #define NOSPREAD_KEY VK_F7
-#define NOSPREAD_KEY VK_F6
-#define INSTANT_RELOAD_KEY VK_F7
 #define CHAMS_KEY VK_F8
 #define ESP_KEY VK_F9
 #define EXTENDED_ESP_KEY VK_NUMPAD1
@@ -739,7 +737,7 @@ void __stdcall hookD3D11DrawIndexed(ID3D11DeviceContext* pContext, UINT IndexCou
     }
 
     //wallhack/chams
-    if ((Stride == 24 || Stride == countnum) && EnableChams)
+    if ((Stride == 24 || Stride == countnum && Descr.Format == 71 && pscdesc.ByteWidth == 4096) && EnableChams)
     {
         SetDepthStencilState(DISABLED);
         pContext->PSSetShader(psRed, nullptr, NULL);
@@ -792,7 +790,7 @@ void __stdcall hookD3D11PSSetShaderResources(ID3D11DeviceContext* pContext, UINT
 
 void __stdcall hookD3D11CreateQuery(ID3D11Device* pDevice, const D3D11_QUERY_DESC *pQueryDesc, ID3D11Query **ppQuery)
 {
-    /*
+    
     //this is required in some games for better wallhack
     //disables Occlusion which prevents rendering player models through certain objects (used by wallhack to see models through walls at all distances, REDUCES FPS)
     if (pQueryDesc->Query == D3D11_QUERY_OCCLUSION)
@@ -802,8 +800,9 @@ void __stdcall hookD3D11CreateQuery(ID3D11Device* pDevice, const D3D11_QUERY_DES
     (&oqueryDesc)->Query = D3D11_QUERY_TIMESTAMP;
 
     return phookD3D11CreateQuery(pDevice, &oqueryDesc, ppQuery);
+
     }
-    */
+    
     return phookD3D11CreateQuery(pDevice, pQueryDesc, ppQuery);
 }
 
@@ -982,6 +981,14 @@ DWORD __stdcall InitializeHook(LPVOID)
         return 1;
     }
     if (MH_EnableHook((DWORD_PTR*)pContextVTable[12]) != MH_OK)
+    {
+        return 1;
+    }
+    if (MH_CreateHook((DWORD_PTR*)pDeviceVTable[24], hookD3D11CreateQuery, reinterpret_cast<void**>(&phookD3D11CreateQuery)) != MH_OK)
+    {
+        return 1;
+    }
+    if (MH_EnableHook((DWORD_PTR*)pDeviceVTable[24]) != MH_OK)
     {
         return 1;
     }
